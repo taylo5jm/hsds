@@ -16,7 +16,7 @@ docker build -t hemoshear-rstudio .
 
 
 ```
-docker run -d -p 8787:8787 rocker/rstudio
+docker run -d -p 8787:8787 hemoshear-rstudio
 ```
 
 Navigate to localhost:8787 and use rstudio as your username and password.

@@ -1,0 +1,113 @@
+---
+title: "Nuclear Counts Analysis - Part 1"
+author: "HS Computational Biology"
+date: "5/29/2018"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library()
+```
+
+
+Today, we are going to start an analysis of a nuclear quantification for a primary hepatocyte experiment (PAH0551). 
+
+First, open a terminal (command+spacebar and type terminal) and navigate to your folder with our git repository with `cd`. Remember, you can use tab for auto-completion and `cd ../` will take you up one level in the file tree. 
+
+To verify that we are in the correct location, we can use the command `pwd` (print working directory). If you are on a Mac, the output should look something like `/Users/justin/Documents/hsds`. 
+
+Next, download this file from Box and place it in `Week2/data`.
+
+```{bash, eval=FALSE}
+https://hemoshear.app.box.com/file/294498639388
+```
+
+We can use the `ls` command to see if our file is there for sure. 
+
+```{bash}
+ls data
+```
+
+Once we have confirmed our data is in the right place, we can start our HemoShear RStudio Docker container. We will expose `Week2/data` on our computer to `/data` inside of the container. The `$YOURUSERNAME` bit will need to be changed to your own username. We will use `$` to denote variables in our command-line code. 
+
+```{bash, eval=FALSE}
+docker run -d -p 8787:8787 -v /Users/$YOURUSERNAME/Documents/hsds/Week2/data:/home/rstudio/data hs-rstudio
+```
+
+Navigate to `localhost:8787` in your browser and also open up the raw data file in Excel. 
+
+
+```{eval=FALSE}
+ATF	1.0
+5	5
+Calculation applied: None
+"Name [Measurement Set Info]=Transfluor"
+"Name [Plate Info]=PAH0552-DAPI-Plate01_IMAGEXPRESS_116273"
+"Description [Plate Info]=PAH0552-DAPI-Plate01"
+"Date Created [Plate Info]=05/25/18"
+"Settings Name [Measurement Set Info]=RNO Nuclear Count"
+"Plate ID"	"Well Name"	"Site ID"	"MEASUREMENT SET ID"	"Nuclear Count (Transfluor)"
+116273	"B01"	1	79646	9735.0
+116273	"B01"	2	79646	7693.0
+116273	"B02"	1	79646	10951.0
+116273	"B02"	2	79646	11065.0
+116273	"B03"	1	79646	11469.0
+116273	"B03"	2	79646	12487.0
+...
+```
+
+
+```{r}
+nuc_counts <- read.delim('data/PAH0552-NucCounts.txt')
+```
+
+We notice that the first 8 lines consist of metadata. We do not need that information for now, so we can open up the help page for `read.delim` with `?read.delim`. If we read closely, we can see that there is a `skip` argument that allows us to start reading the table at a different line than the first one. 
+
+
+```{r}
+nuc_counts <- read.delim('data/PAH0552-NucCounts.txt', skip = 8, nrows=72-9)
+```
+
+Let's change the names of the columns so that they are easier to read.  
+```{r}
+colnames(nuc_counts)
+```
+
+```{r}
+colnames(nuc_counts) <- c('plate', 'well', 'site', 
+                         'measurement_set_id', 'nuc_count')
+```
+
+```{r}
+ggplot(nuc_counts, aes(x=nuc_count)) +
+  geom_histogram()
+```
+
+```{r}
+# :readMolDev('data/PAH0552-NucCounts.txt')
+```
+
+```{r}
+ggplot(nuc_counts, aes(x=nuc_count)) +
+  geom_histogram(binwidth=1000)
+```
+
+
+```{r}
+ggplot(nuc_counts, aes(x=nuc_count)) +
+  geom_histogram(binwidth=1000) +
+  labs(x='Nuclear count', y='Frequency',
+       title = 'PAH0551 Nuclear counts') 
+```
+
+
+```{r}
+ggplot(nuc_counts, aes(x=nuc_count)) +
+  geom_histogram(binwidth=1000) +
+  labs(x='Nuclear count', y='Frequency',
+       title = 'PAH0551 Nuclear counts') +
+  theme_bw()
+```
+

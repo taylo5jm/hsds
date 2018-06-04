@@ -1,0 +1,126 @@
+---
+title: "Week3"
+author: "Justin Taylor"
+date: "6/1/2018"
+output: html_document
+---
+
+In week 2, we started a nuclear quantification for a primary hepatocyte experiment. We touched on how to read text files, data types, and plotting univariate data. This week, we will expand our data input lexicon by reading in an Excel file with metadata for the nuclear counts. We will read the entirety of the nuclear counts file with Nate's function `readMolDev`, so that we can use the `dplyr` package to combine our data sources. Finally, we will touch on cleaning data and visualization.  
+
+## Solutions to exercises  
+
+```{r, echo=FALSE}
+nucs <- readRDS("../Week2/inst/nuc_counts.RDS")
+``` 
+
+1. Print the first 15 lines of `nucs`.   
+
+The second argument to `head` is `n`, which is the number of rows in the data frame that should be returned.  
+
+```{r}
+head(nucs, n = 15)
+```
+
+2. Print the last 10 lines of `nucs`.   
+
+Note, we do not have to type the name of the argument (`n=10`), because the positions of the arguments match.
+
+```{r}
+tail(nucs, 10)
+```
+
+3. What is the data type of the well identifier in the `nucs` data? Change the type to `character`.
+
+We can use the `as.` functions to change the data type of objects in R. `as.character` is the function that will change the data type to character, which typically works well for sample identifiers.  
+
+```{r}
+class(nucs$well)
+nucs$well <- as.character(nucs$well)
+```
+
+4. Add a better x-label to the histogram we made, change the number of bars, and remove the main title from the plot  
+
+By reading the documentation for `hist`, we see that `xlab` controls the label of the x-axis, and `main` is the title for the plot. `breaks` is the argument we can use for setting the number of bars in our histogram. 
+
+```{r, fig.size=3, fig.height=4}
+hist(nucs$nuc_count,
+     xlab = 'Nuclear Count',
+     main=NULL,
+     breaks = 20)
+```
+
+## Week 3 Contents  
+
+```{r, echo=FALSE}
+# readMolDev is bitching in RMarkdown - no tidyselect variables registered
+nucs <- readRDS("inst/moldev-nucs.RDS")
+```
+
+## Reading scope data for multiple plates  
+
+```{r, eval=FALSE}
+library(magrittr)
+library(tidyverse)
+source("../Week2/R/readMolDev.R")
+nucs <- readMolDev('../Week2/data/PAH0552-NucCounts.txt')
+```
+First, I typically print out the names of the fields in the data with `colnames`. 
+
+```{r}
+colnames(nucs)
+```
+
+Next, we should check out the first few rows to see that we have reasonable values for the fields we have identified.  
+
+```{r}
+head(nucs)
+```
+
+It is a good idea to inspect relevant variables one at a time. `unique` is a good function to identify the unique values in a vector. We can use `unique` to see that there are four plates for the run ID `PAH0552`. 
+
+```{r}
+unique(nucs$plate)
+```
+
+```{r}
+unique(nucs$run)
+```
+
+We may want to see how many rows of data we have for each plate.  
+```{r}
+table(nucs$plate)
+```
+
+Visualizing the distribution of numeric variables is always a good idea. As we discussed last week, histograms are useful for visualizing the shape of a distribution. 
+
+```{r}
+hist(nucs$nuclear_count_transfluor,
+     main = NULL,
+     xlab = 'Nuclear count')
+```
+
+We can also use boxplots, which have the added benefit of providing a 5-number summary of the distribution (minimum, 1st quartile, median, 3rd quartile, max)
+
+```{r}   
+boxplot(nucs$nuclear_count_transfluor)
+```
+
+We can also see a numerical summary of the data by using the function `summary` on any numeric vector. The numbers you see below will match the boxplot above. 
+
+```{r}
+summary(nucs$nuclear_count_transfluor)
+```
+
+## Merging data  
+
+Merge meta with raw data  
+
+## Regular expressions   
+
+
+```{r}
+first_plate <- read.delim('../Week2/data/PAH0552-NucCounts.txt',
+                   skip = 8, nrows = 73-8)
+tail(first_plate)
+```
+

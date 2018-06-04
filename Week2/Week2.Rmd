@@ -1,0 +1,213 @@
+---
+title: "HemoShear Data Science Study Group - Week 2"
+output:
+  pdf_document: default
+  html_document: default
+date: '2018-05-29'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This week, we will start a nuclear quantification for a primary hepatocyte experiment. First, we touch on how to find help in R via help pages. Next, we discuss how to think about reading in a file of nuclear counts for one plate. After we have loaded the data, we make a quick visualization as a sanity check and learn a bit about data types in R. 
+
+# Starting the container
+
+First, open a terminal (command+spacebar and type terminal) and navigate to your folder with our git repository with `cd`. Remember, you can use tab for auto-completion and `cd ../` will take you up one level in the file tree. 
+
+To verify that we are in the correct location, we can use the command `pwd` (print working directory). If you are on a Mac, the output should look something like `/Users/justin/Documents/hsds`. 
+
+Next, download this file from Box and place it in `Week2/data`.
+
+```{bash, eval=FALSE}
+https://hemoshear.app.box.com/file/294498639388
+```
+
+We can use the `ls` command to see if our file is there for sure. 
+
+```{bash}
+ls data
+```
+
+Once we have confirmed our data is in the right place, we can start our HemoShear RStudio Docker container. We will expose `Week2/data` on our computer to `home/rstudio/data` inside of the container. The `$YOURUSERNAME` bit will need to be changed to your own username. We will use `$` to denote variables in our command-line code. 
+
+```{bash, eval=FALSE}
+docker run -d -p 8787:8787 -v /Users/$YOURUSERNAME/Documents/hsds/Week2/data:/home/rstudio/data hs-rstudio
+```
+
+Navigate to `localhost:8787` in your browser.
+
+# Finding help 
+
+First, we need to figure out which function we can use to read the nuclear counts text file. We could search Google for `how to read .txt file in R` or we can use the help page viewer in RStudio. The help pages are typically a faster route, but Google can still be helpful to find which help page to consult. 
+
+![One can type ?function to see the help page for a function. In this example, we know we probably have to 'read' something, so we can start typing out 'read' and then tab to see which function names exist.](img/autocomplete-help.png)
+
+```{r}
+?read.csv
+```
+
+We can access the help page for `read.csv` and see a number of functions listed in the `Usage` section. When functions are listed in the same help page, it means they are related in some way. The functions on the `Data Input` page are capable of reading in various file types, such as `tsv`, `csv`, `txt`, etc. 
+
+After browsing the documentation, the `read.table` or `read.delim` functions look reasonable. We will use `read.delim` here, because I am more familiar with it. You could also use `read.table`. In the R language, there is often more than one way to accomplish a task.
+
+```{r, eval=FALSE}
+?read.delim
+```
+
+![In this help page, we see that `read.csv`, `read.csv2`, `read.delim`, and `read.delim2` are all special cases of `read.table`. The first argument to each function, `file` is the only required input. Read the `Arguments` section of the help page to see the entry for `file`. The other arguments are optional, meaning that they already have set values. For example, `header = TRUE` tells the machine to read the first line in the data as the column names.](img/function-args.png)
+
+
+# Reading data  
+
+We should be able to see a file called `PAH0552-NucCounts.txt`. In my container, it is in a folder called `data`. Your file path may be slightly different than mine. Use the `Files` pane in the lower right quadrant of RStudio to find the file and click on the file name. A new window in RStudio should open and you should see data that match the block that follows. I have included only the first 15 lines or so. 
+
+```{r, eval=FALSE}
+ATF	1.0
+5	5
+Calculation applied: None
+"Name [Measurement Set Info]=Transfluor"
+"Name [Plate Info]=PAH0552-DAPI-Plate01_IMAGEXPRESS_116273"
+"Description [Plate Info]=PAH0552-DAPI-Plate01"
+"Date Created [Plate Info]=05/25/18"
+"Settings Name [Measurement Set Info]=RNO Nuclear Count"
+"Plate ID"	"Well Name"	"Site ID"	"MEASUREMENT SET ID"	"Nuclear Count (Transfluor)"
+116273	"B01"	1	79646	9735.0
+116273	"B01"	2	79646	7693.0
+116273	"B02"	1	79646	10951.0
+116273	"B02"	2	79646	11065.0
+116273	"B03"	1	79646	11469.0
+116273	"B03"	2	79646	12487.0
+116273	"B04"	1	79646	9950.0
+...
+```
+
+We learned today that the first two lines in the file are artefacts of the process of writing the file.
+
+```{r, eval=FALSE}
+AFT 1.0
+5 5
+```
+
+The next 6 lines appear to be metadata. This set includes a name for the software used, plate identifier, a description for the plate, date, and more software information.  
+
+```{r, eval=FALSE}
+Calculation applied: None
+"Name [Measurement Set Info]=Transfluor"
+"Name [Plate Info]=PAH0552-DAPI-Plate01_IMAGEXPRESS_116273"
+"Description [Plate Info]=PAH0552-DAPI-Plate01"
+"Date Created [Plate Info]=05/25/18"
+"Settings Name [Measurement Set Info]=RNO Nuclear Count"
+```
+
+Finally, we arrive at what seems to be nuclear count values. The column names are typically listed on the line that precedes the first line of data. Here, we can see there are 5 fields: `Plate ID`, `Well Name`, `Site ID`, `MEASUREMENT SET ID`, and `Nuclear Count (Transfluor)`. There are also five values in each line that seem to match these field names. 
+
+In the snippet below, we can see that each well is imaged twice. 
+
+```{r, eval=FALSE}
+"Plate ID"	"Well Name"	"Site ID"	"MEASUREMENT SET ID"	"Nuclear Count (Transfluor)"
+116273	"B01"	1	79646	9735.0
+116273	"B01"	2	79646	7693.0
+116273	"B02"	1	79646	10951.0
+116273	"B02"	2	79646	11065.0
+...
+```
+
+Keep scrolling down through the raw data to see that this pattern repeats. In the file, we observe there are multiple plates, each with a set of metadata to identify the plates and a set of nuclear count values. For now, we are going to focus on just reading nuclear counts from the first plate in this file. 
+
+After we have investigated the raw data in a text editor or spreadsheet program like Excel, we can try to read it with `read.delim`. In the documentation for `read.delim`, note the only argument we are required to give is `file`. 
+```{r}
+nucs <- read.delim('data/PAH0552-NucCounts.txt')
+```
+
+It is worthwhile to check a few rows in the new object you have created and compare the values to the raw data. Looking at the raw data, we see that the entry on line 10 should have a nuclear count of 9735.
+
+Unfortunately, if we try to print out line 10, we get something different. 
+
+```{r}
+nucs[10,]
+```
+
+This is not at all what we want to see, becuase there are no values here and certainly not 9735. We should also have 5 columns, not 2. Print the dimensions of an object to see if your data are in the right shape. Now, we know that we need to change some of the *arguments* in our call to `read.delim`.
+
+```{r}
+dim(nucs)
+```
+
+If we scroll through the `Arguments` section on the `read.delim` help page, we can see there are two arguments that allow us to change something about the number of rows that are read and skipped: `nrows` and `skip`. We need to use these arguments to read the data correctly. 
+
+Since we have focused our analysis on the first plate, we will leave the parsing of metadata for another day. We want the `skip` argument to be the number of lines that precede the line of field names for the data. We also only want to read the number of rows that correspond to the first plate, so we look in the raw data to see that the number is about 72 (the AT artefact appears in 73, so assume 72 is the end of the file for today's exercise).
+
+```{r}
+nucs <- read.delim('data/PAH0552-NucCounts.txt',
+                   skip = 8, nrows = 72 - 8)
+```
+
+You can use `head` to print the first few lines of data. There are 5 columns here as we expected.
+
+```{r}
+head(nucs)
+```
+
+Note, this object is a `data.frame`. The `data.frame` is a *data type* in R that represents rectangular data. 
+
+```{r}
+class(nucs)
+```
+
+Next, we want to rename the columns so they are a bit more concise and readable. It is convention to use underscores in lieu of periods and to use lowercase letters. 
+
+```{r}
+colnames(nucs)
+```
+
+```{r}
+colnames(nucs) <- c('plate', 'well', 'site', 'meas', 
+                    'nuc_count')
+colnames(nucs)
+```
+
+Now, we will make a histogram to see the distribution of nuclear counts on the first plate. The function to make a histogram is called `hist`, and one can also find this by using `help.search('histogram')`. We see that `hist` takes one argument, `x`, which should be a vector of numeric values. We can use `$` to extract the nuclear counts from our table.
+
+```{r}
+head(nucs$nuc_counts)
+```
+
+```{r, error=TRUE}
+hist(nucs$nuc_count)
+```
+
+Unfortunately, we have not yet specified that our nuclear counts should be treated as numbers in the computer. We can use `class` to see that `nuc_count` is represented as a `factor`, which is another data type in R. A `factor` in R is typically used to represent a categorical variable. 
+
+```{r}
+class(nucs$nuc_count)
+```
+
+We can change the data type of an object by using the `as.numeric` and `as.character` functions. 
+
+```{r}
+nucs$nuc_count <- as.numeric(as.character(nucs$nuc_count))
+class(nucs$nuc_count)
+```
+
+Now, our histogram should render: 
+
+```{r}
+hist(nucs$nuc_count)
+```
+
+
+# Exercises  
+
+1. Print the first 15 lines of `nucs`.  
+2. Print the last 10 lines of `nucs`.   
+3. What is the data type of the well identifier in the `nucs` data? Change the type to `character`.
+4. Add a better x-label to the histogram we made, change the number of bars, and remove the main title from the plot
+
+
+# Further reading
+
+Data types in R  
+https://www.statmethods.net/input/datatypes.html  
+

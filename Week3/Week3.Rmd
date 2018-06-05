@@ -5,7 +5,7 @@ date: "6/1/2018"
 output: html_document
 ---
 
-In week 2, we started a nuclear quantification for a primary hepatocyte experiment. We touched on how to read text files, data types, and plotting univariate data. This week, we will expand our data input lexicon by reading in an Excel file with metadata for the nuclear counts. We will read the entirety of the nuclear counts file with Nate's function `readMolDev`, so that we can use the `dplyr` package to combine our data sources. Finally, we will touch on cleaning data and visualization.  
+In week 2, we started a nuclear quantification for a primary hepatocyte experiment. We touched on how to read text files, data types, and plotting univariate data. First, we will read the entirety of the nuclear counts file with Nate's function, `readMolDev`. Next, we will read the metadata associated with these nuclear counts. Lastly, we can use the `dplyr` package to combine our data sources.
 
 ## Solutions to exercises  
 
@@ -51,6 +51,8 @@ hist(nucs$nuc_count,
 
 ## Week 3 Contents  
 
+This week, we are going to start by reading a file of nuclear counts with a function, `readMolDev`. `readMolDev` is a function that Nate wrote to read imaging files. It is able to read an arbitrary number of plates and handles a variety of cases. 
+
 ```{r, echo=FALSE}
 # readMolDev is bitching in RMarkdown - no tidyselect variables registered
 nucs <- readRDS("inst/moldev-nucs.RDS")
@@ -93,7 +95,7 @@ table(nucs$plate)
 
 Visualizing the distribution of numeric variables is always a good idea. As we discussed last week, histograms are useful for visualizing the shape of a distribution. 
 
-```{r}
+```{r, fig.width=4, fig.height=4}
 hist(nucs$nuclear_count_transfluor,
      main = NULL,
      xlab = 'Nuclear count')
@@ -101,7 +103,7 @@ hist(nucs$nuclear_count_transfluor,
 
 We can also use boxplots, which have the added benefit of providing a 5-number summary of the distribution (minimum, 1st quartile, median, 3rd quartile, max)
 
-```{r}   
+```{r, fig.height=4, fig.width=4}   
 boxplot(nucs$nuclear_count_transfluor)
 ```
 
@@ -111,9 +113,51 @@ We can also see a numerical summary of the data by using the function `summary` 
 summary(nucs$nuclear_count_transfluor)
 ```
 
+## Reading metadata 
+
+Often, we need to read metadata that is stored as Excel files. The `openxlsx` package makes it easy to read a subset of a large Excel file. The `sheet` argument can either a sheet number or character that represents the name of the sheet in the actual Excel file. The `rows` argument is a numeric vector for the row indices we want to read. The default value for `colNames` is `TRUE`, which will cause the function to think the field names are in the first line (10351 in this case). We will look at the data and type these by hand today. 
+
+```{r}
+library(openxlsx)
+meta <- read.xlsx('data/PAH sample database.xlsx', sheet = 'PAH',
+                  rows=10351:10478, colNames=FALSE)
+colnames(meta) <- c('study', 'sample_id',
+                    'start_date', 'exp_type',
+                    'culture_plate', 'culture_well', 
+                    'cell_type', 'donor', 'phenotype',
+                    'media', 'tx_cmpd', 'tx_conc', 
+                    'tx_cmpd2', 'tx_conc2')
+head(meta, 3)
+```
+
+If you ever need to access the sheet names in R, we can use a function `excel_sheets` from a package called `readxl`. 
+
+```{r}
+library(readxl)
+excel_sheets('data/PAH sample database.xlsx')
+```
+
+
 ## Merging data  
 
-Merge meta with raw data  
+In general, there are four steps for combining data from two distinct sources. 
+
+1. Identify fields that are shared between the two sets
+2. Rename matching fields so they have the same name in both sets
+3. Change data types of fields if necessary 
+4. Choose the correct join to use
+
+First, we should identify the intersection of fields for the two data sets. In this case, we know that each nuclear count in our data can be mapped to a single well on a plate. 
+
+```{r}
+colnames(nucs)
+colnames(meta)
+```
+
+```{r}
+
+```
+
 
 ## Regular expressions   
 
